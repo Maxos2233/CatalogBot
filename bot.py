@@ -93,6 +93,7 @@ async def edit_end(update, context):
 
 async def search_start(update, context):
     await update.message.reply_text("Введите артикул товара")
+    await update.message.reply_text("Пизда")
     return ARTICLE
 
 async def search_end(update, context):
