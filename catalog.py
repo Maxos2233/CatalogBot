@@ -1,5 +1,3 @@
-import json
-
 import database
 
 def add_product(name, article, quantity):
