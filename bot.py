@@ -3,6 +3,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes, Conversation
 
 from config import TOKEN
 import catalog
+from models import ProductCreateDTO, ProductUpdateDTO, ProductShowDTO, ProductGetArticleDTO
 
 NAME, ARTICLE, QUANTITY = range(3)
 
@@ -41,7 +42,8 @@ async def get_name(update, context):
 
 async def get_article(update, context):
     context.user_data["article"] = update.message.text
-    product = catalog.product_exists(context.user_data["article"])
+    dto = ProductGetArticleDTO(context.user_data["article"])
+    product = catalog.product_exists(dto)
     if product:
         await update.message.reply_text("Товар с таким артиклем уже существует")
         return ConversationHandler.END
@@ -50,7 +52,8 @@ async def get_article(update, context):
 
 async def end_add(update, context):
     context.user_data["quantity"] = update.message.text
-    await update.message.reply_text(catalog.add_product(context.user_data["name"], context.user_data["article"], context.user_data["quantity"]))
+    dto = ProductCreateDTO(context.user_data["name"], context.user_data["article"], context.user_data["quantity"])
+    await update.message.reply_text(catalog.add_product(dto))
     return ConversationHandler.END
 
 async def cancel(update, context):
@@ -66,11 +69,12 @@ async def delete_start(update, context):
 
 async def delete_end(update, context):
     context.user_data["article"] = update.message.text
-    product = catalog.product_exists(context.user_data["article"])
-    if product is None:
+    dto = ProductGetArticleDTO(context.user_data["article"])
+    product = catalog.product_exists(dto)
+    if product is False:
         await update.message.reply_text("Такого товара не существует")
         return ConversationHandler.END
-    await update.message.reply_text(catalog.delete_product(context.user_data["article"]))
+    await update.message.reply_text(catalog.delete_product(dto))
     return ConversationHandler.END
 
 async def edit_start(update, context):
@@ -79,8 +83,9 @@ async def edit_start(update, context):
 
 async def edit_article(update, context):
     context.user_data["article"] = update.message.text
-    product = catalog.product_exists(context.user_data["article"])
-    if product is None:
+    dto = ProductGetArticleDTO(context.user_data["article"])
+    product = catalog.product_exists(dto)
+    if product is False:
         await update.message.reply_text("Такого товара не существует")
         return ConversationHandler.END
     await update.message.reply_text("Введите новое количество товара")
@@ -88,7 +93,8 @@ async def edit_article(update, context):
 
 async def edit_end(update, context):
     context.user_data["quantity"] = update.message.text
-    await update.message.reply_text(catalog.edit_product(context.user_data["article"], context.user_data["quantity"]))
+    dto = ProductUpdateDTO(context.user_data["article"], context.user_data["quantity"])
+    await update.message.reply_text(catalog.edit_product(dto))
     return ConversationHandler.END
 
 async def search_start(update, context):
@@ -97,7 +103,8 @@ async def search_start(update, context):
 
 async def search_end(update, context):
     context.user_data["article"] = update.message.text
-    await update.message.reply_text(f"Найденые товары: {catalog.search_product(context.user_data["article"])}")
+    dto = ProductGetArticleDTO(context.user_data["article"])
+    await update.message.reply_text(f"Найденые товары: {catalog.search_product(dto)}")
     return ConversationHandler.END
 
 add_position = ConversationHandler(

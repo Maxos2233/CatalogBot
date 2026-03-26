@@ -1,8 +1,18 @@
 import database
+from models import ProductCreateDTO, ProductUpdateDTO, ProductShowDTO, ProductGetArticleDTO, ProductEntity
 
-def add_product(name, article, quantity):
-    product_info = {"name": name, "article": article, "quantity": quantity}
-    database.products.insert_one(product_info)
+
+def add_product(dto: ProductCreateDTO):
+    entity = ProductEntity(
+        name=dto.name,
+        article=dto.article,
+        quantity=dto.quantity,
+    )
+    database.products.insert_one({
+        "name": entity.name,
+        "article": entity.article,
+        "quantity": entity.quantity,
+    })
     return "Товар добавлен в каталог"
 
 def load_catalog():
@@ -13,45 +23,46 @@ def load_catalog():
         pass
     return catalog
 
-def delete_product(article):
-    catalog = database.products.find()
-    new_catalog = []
-    product_exist = any(product["article"] == article for product in catalog)
-    for product in catalog:
-        if article != product["article"]:
-            new_catalog.append(product)
-    if not product_exist:
-        return "Такого товара нет"
-    database.products.delete_one({"article": article})
+def delete_product(dto: ProductGetArticleDTO):
+    database.products.delete_one({"article": dto.article})
     return "Товар удален"
 
 def show_product():
     catalog = database.products.find()
     result = ""
     for product in catalog:
-        result += f"{product['name']} - {product['article']} - {product['quantity']}\n\n"
+        entity = ProductEntity(
+            name = product["name"],
+            article = product["article"],
+            quantity = product["quantity"]
+        )
+        result += f"{entity.name} - {entity.article} - {entity.quantity}\n\n"
     return result
 
-def edit_product(article, quantity):
-    catalog = database.products.find()
-    for product in catalog:
-        if article == product["article"]:
-            product["quantity"] = quantity
-    database.products.update_one({"article": article}, {"$set": {"quantity": quantity}})
-    return f"Для товара {article}, было задано новое количество - {quantity}"
+def edit_product(dto: ProductUpdateDTO):
+    database.products.update_one({"article": dto.article}, {"$set": {"quantity": dto.quantity}})
+    return f"Для товара {dto.article}, было задано новое количество - {dto.quantity}"
 
-def search_product(article):
+def search_product(dto: ProductGetArticleDTO):
     catalog = database.products.find()
     result = ""
     for product in catalog:
-        if article == product["article"] :
-            result += f"{product['name']} - {product['article']} - {product['quantity']}"
+        if dto.article == product["article"] :
+            entity = ProductEntity(
+                name = product["name"],
+                article = product["article"],
+                quantity = product["quantity"]
+            )
+            transform_to_dto = ProductShowDTO(
+                name = entity.name,
+                article = entity.article,
+                quantity = entity.quantity
+            )
+            result += f"{transform_to_dto.name} - {transform_to_dto.article} - {transform_to_dto.quantity}\n\n"
             return result
     return "Товар не найден"
 
-def product_exists(article):
+def product_exists(dto: ProductGetArticleDTO):
     catalog = database.products.find()
-    product_exist = any(product["article"] == article for product in catalog)
-    if not product_exist:
-        return None
-    return True
+    product_exist = any(product["article"] == dto.article for product in catalog)
+    return product_exist
